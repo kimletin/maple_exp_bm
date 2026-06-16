@@ -14,7 +14,7 @@ interface UpdateEntry {
 const UPDATES: UpdateEntry[] = [
   {
     date: '2026.06.18.',
-    title: 'ver.1.2.416 패치',
+    title: 'ver.1.2.416 업데이트',
     items: [
       '295~299 구간 메카베리 농장, VIP 사우나, MVP 리조트 경험치 업데이트',
       '에픽 던전 기본 보상 세라자르 주화 2개 → 솔 에르다 조각 15개로 변경',
