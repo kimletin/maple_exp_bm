@@ -23,7 +23,7 @@ const UPDATES: UpdateEntry[] = [
   },
   {
     date: '2026.06.15.',
-    title: '서비스 오픈',
+    title: '하루1소재 오픈',
     items: ['소재비 오픈'],
   },
 ];
@@ -90,11 +90,6 @@ export default function InfoCenterTab() {
               <p className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">📌 서비스 대상</p>
               <p>하루1소재는 <span className="font-semibold text-orange-500">260레벨 이상</span>의 캐릭터를 대상으로 합니다. 260레벨 미만 캐릭터의 경험치 효율 및 정보는 제공되지 않습니다.</p>
             </div>
-            <div>
-              <p className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">💡 부스터 개수 입력</p>
-              <p>30분 도핑 표의 부스터 입력란에는 30분 동안 사용할 부스터 개수를, 30일 도핑 표에는 하루 평균 사용하는 부스터 개수를 입력하세요. 부스터를 많이 사용할수록 도핑 아이템의 효율이 올라갑니다. 부스터를 사용하지 않는다면 0으로 두시면 됩니다.</p>
-            </div>
-
             <div>
               <p className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">💡 가성비 배율 기준</p>
               <p>가성비 배율은 VIP 사우나를 기준(100%)으로 계산됩니다. 배율이 높을수록 VIP 사우나 대비 더 효율적인 아이템입니다.</p>

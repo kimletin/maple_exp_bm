@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { InputValues, MobGroup } from '@/types';
 import { HUNTING_REGIONS } from '@/data/huntingGrounds';
+import HuntingGroundModal from '@/components/HuntingGroundModal';
 
 function TooltipIcon({ text }: { text: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -96,6 +97,7 @@ function NumInput({ label, value, onChange, min, max, width = 'w-[88px]' }: {
 
 
 export default function InputPanel({ inputs, onChange }: Props) {
+  const [showGroundModal, setShowGroundModal] = useState(false);
   const currentRegion = HUNTING_REGIONS.find(r => r.name === inputs.huntingRegion) ?? HUNTING_REGIONS[0];
 
   const applyGround = (ground: typeof currentRegion.grounds[0]) => {
@@ -106,18 +108,6 @@ export default function InputPanel({ inputs, onChange }: Props) {
     onChange('boosterMonsterLevel', ground.boosterLevel ?? ground.mobs[ground.mobs.length - 1].level);
   };
 
-  const handleRegionChange = (regionName: string) => {
-    const region = HUNTING_REGIONS.find(r => r.name === regionName)!;
-    onChange('huntingRegion', regionName);
-    applyGround(region.grounds[0]);
-  };
-
-  const handleGroundChange = (groundName: string) => {
-    const ground = currentRegion.grounds.find(g => g.name === groundName)!;
-    applyGround(ground);
-  };
-
-  const selectCls = 'text-[12px] border-2 border-yellow-400 dark:border-yellow-600 bg-yellow-50 dark:bg-zinc-800 rounded px-1.5 py-0 h-[24px] text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 cursor-pointer';
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-700 overflow-hidden">
@@ -164,37 +154,48 @@ export default function InputPanel({ inputs, onChange }: Props) {
         <div className="border-t border-gray-100 dark:border-zinc-700 mt-2 pt-2">
           <NumInput label="하루 소재 횟수" value={inputs.dailySessions} onChange={v => onChange('dailySessions', v)} min={1} />
           <div className="flex items-center gap-3 py-1">
-            <label className="text-sm text-gray-700 dark:text-zinc-300 whitespace-nowrap flex-1">지역</label>
-            <select
-              value={inputs.huntingRegion}
-              onChange={e => handleRegionChange(e.target.value)}
-              className={selectCls + ' w-[88px]'}
-            >
-              {HUNTING_REGIONS.map(r => (
-                <option key={r.name} value={r.name}>{r.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-3 py-1">
             <label className="text-sm text-gray-700 dark:text-zinc-300 whitespace-nowrap flex-1">사냥터</label>
-            <select
-              value={inputs.huntingGround}
-              onChange={e => handleGroundChange(e.target.value)}
-              className={selectCls + ' w-[184px]'}
+            <button
+              onClick={() => setShowGroundModal(true)}
+              className="px-3 py-0 h-[24px] text-[12px] font-medium rounded border-2 bg-orange-500 border-orange-500 text-white hover:bg-orange-600 hover:border-orange-600 transition-colors cursor-pointer whitespace-nowrap"
             >
-              {currentRegion.grounds.map(g => (
-                <option key={g.name} value={g.name}>{g.name}</option>
-              ))}
-            </select>
+              사냥터 선택
+            </button>
+          </div>
+          <div className="flex justify-end py-0.5">
+            <span className="text-xs text-gray-500 dark:text-zinc-400 truncate">{inputs.huntingRegion} · {inputs.huntingGround}</span>
           </div>
         </div>
 
+        {showGroundModal && (
+          <HuntingGroundModal
+            currentRegion={inputs.huntingRegion}
+            currentGround={inputs.huntingGround}
+            charLevel={inputs.charLevel}
+            onConfirm={(region, ground) => {
+              onChange('huntingRegion', region);
+              onChange('huntingGround', ground.name);
+              onChange('huntingMobs', ground.mobs);
+              onChange('monsterLevel', ground.mobs[0].level);
+              onChange('mobCount', ground.mobs.reduce((s, m) => s + m.count, 0));
+              onChange('boosterMonsterLevel', ground.boosterLevel ?? ground.mobs[ground.mobs.length - 1].level);
+            }}
+            onClose={() => setShowGroundModal(false)}
+          />
+        )}
+
         {/* 부스터 사용 횟수 */}
         <div className="border-t border-gray-100 dark:border-zinc-700 mt-2 pt-2 space-y-0.5">
-          <p className="text-xs text-orange-500 dark:text-orange-400 font-bold mb-1">30분 내 사용 부스터</p>
+          <div className="flex items-center gap-1 mb-1">
+            <p className="text-xs text-orange-500 dark:text-orange-400 font-bold">30분 내 사용 부스터</p>
+            <TooltipIcon text={<>부스터를 많이 사용할수록 30분 도핑<br />아이템들의 효율이 상승합니다</>} />
+          </div>
           <NumInput label="황금태엽/VIP/헥사" value={inputs.booster30min} onChange={v => onChange('booster30min', v)} min={0} max={99} width="w-[44px]" />
           <NumInput label="영겁의 황금태엽" value={inputs.eternal30min} onChange={v => onChange('eternal30min', v)} min={0} max={99} width="w-[44px]" />
-          <p className="text-xs text-orange-500 dark:text-orange-400 font-bold mt-2 mb-1">1일 평균 사용 부스터</p>
+          <div className="flex items-center gap-1 mt-2 mb-1">
+            <p className="text-xs text-orange-500 dark:text-orange-400 font-bold">1일 평균 사용 부스터</p>
+            <TooltipIcon text={<>부스터를 많이 사용할수록 30일 도핑<br />아이템들의 효율이 상승합니다</>} />
+          </div>
           <NumInput label="황금태엽/VIP/헥사" value={inputs.booster1day} onChange={v => onChange('booster1day', v)} min={0} max={99} width="w-[44px]" />
           <NumInput label="영겁의 황금태엽" value={inputs.eternal1day} onChange={v => onChange('eternal1day', v)} min={0} max={99} width="w-[44px]" />
         </div>

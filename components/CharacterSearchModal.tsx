@@ -12,6 +12,7 @@ export interface CharacterInfo {
   guild?: string | null;
   monsterParkBonus?: number;
   epicDungeonBonus?: number;
+  expRate?: number;
 }
 
 interface Props {
@@ -27,9 +28,11 @@ export default function CharacterSearchModal({ onConfirm, onClose, onSkip }: Pro
   const [result, setResult] = useState<CharacterInfo | null>(null);
   const [manualLevel, setManualLevel] = useState('');
   const [manualName, setManualName] = useState('');
+  const [manualExpRate, setManualExpRate] = useState('');
   const [manualMonsterPark, setManualMonsterPark] = useState('');
   const [manualEpicDungeon, setManualEpicDungeon] = useState('');
   const [showManual, setShowManual] = useState(false);
+  const [activeError, setActiveError] = useState<{ field: 'name' | 'level' | 'expRate' | 'mp' | 'ep'; msg: string } | null>(null);
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -53,7 +56,24 @@ export default function CharacterSearchModal({ onConfirm, onClose, onSkip }: Pro
   };
 
   const manualLv = parseInt(manualLevel);
-  const manualValid = manualLv >= 260 && manualLv < 300 && manualName.trim().length > 0;
+  const expRateNum = parseFloat(manualExpRate);
+  const mpNum      = parseInt(manualMonsterPark);
+  const epNum      = parseInt(manualEpicDungeon);
+
+  const getFirstError = () => {
+    if (manualName.trim().length === 0) return { field: 'name'    as const, msg: '닉네임을 입력해주세요' };
+    if (manualLevel === '')             return { field: 'level'   as const, msg: '레벨을 입력해주세요' };
+    if (manualLv < 260 || manualLv > 299) return { field: 'level' as const, msg: '레벨이 올바르지 않아요' };
+    if (manualExpRate !== '' && (isNaN(expRateNum) || expRateNum < 0 || expRateNum > 100))
+                                        return { field: 'expRate' as const, msg: '경험치가 올바르지 않아요' };
+    if (manualMonsterPark !== '' && (isNaN(mpNum) || mpNum < 0 || mpNum > 100))
+                                        return { field: 'mp'      as const, msg: '몬파 보약이 올바르지 않아요' };
+    if (manualEpicDungeon !== '' && (isNaN(epNum) || epNum < 0 || epNum > 100))
+                                        return { field: 'ep'      as const, msg: '에픽 던전 보약이 올바르지 않아요' };
+    return null;
+  };
+  const manualValid = getFirstError() === null;
+  const manualExpRateVal = manualExpRate === '' ? undefined : expRateNum;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -145,73 +165,89 @@ export default function CharacterSearchModal({ onConfirm, onClose, onSkip }: Pro
 
         {/* 레벨 직접 입력 */}
         {showManual && (
-          <div className="flex gap-2 mt-2 items-stretch">
-            <div className="flex flex-col gap-2 flex-1 min-w-0">
-              {/* 1행: 닉네임 + 레벨 */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="닉네임"
-                  maxLength={12}
-                  value={manualName}
-                  onChange={e => setManualName(e.target.value)}
-                  className="flex-1 min-w-0 border border-gray-300 dark:border-zinc-600 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-orange-400 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                />
+          <div className="flex flex-col gap-2 mt-2">
+            <div>
+              <input
+                type="text"
+                placeholder="닉네임"
+                maxLength={12}
+                value={manualName}
+                onChange={e => { setManualName(e.target.value); setActiveError(null); }}
+                className={'w-full border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-orange-400 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 ' + (activeError?.field === 'name' ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-zinc-600')}
+              />
+              {activeError?.field === 'name' && <p className="text-xs text-red-500 mt-0.5 px-1">{activeError.msg}</p>}
+            </div>
+            <div>
+              <div className="relative">
                 <input
                   type="text"
                   inputMode="numeric"
                   placeholder="레벨"
                   value={manualLevel}
-                  onChange={e => {
-                    const v = e.target.value.replace(/[^0-9]/g, '');
-                    if (v === '' || parseInt(v) <= 300) setManualLevel(v);
-                  }}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && manualValid)
-                      onConfirm({ name: manualName.trim(), level: manualLv, class: '', world: '', monsterParkBonus: manualMonsterPark ? parseInt(manualMonsterPark) : 0, epicDungeonBonus: manualEpicDungeon ? parseInt(manualEpicDungeon) : 0 });
-                  }}
-                  className="flex-1 min-w-0 border border-gray-300 dark:border-zinc-600 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-orange-400 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                  onChange={e => { setManualLevel(e.target.value.replace(/[^0-9]/g, '')); setActiveError(null); }}
+                  className={'w-full border rounded-lg px-3 pr-10 py-1.5 text-sm outline-none focus:ring-2 focus:ring-orange-400 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 ' + (activeError?.field === 'level' ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-zinc-600')}
                 />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-zinc-500 pointer-events-none">레벨</span>
               </div>
-              {/* 2행: 몬파 보약 + 에픽 보약 */}
-              <div className="flex gap-2">
+              {activeError?.field === 'level' && <p className="text-xs text-red-500 mt-0.5 px-1">{activeError.msg}</p>}
+            </div>
+            <div>
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="현재 경험치"
+                  value={manualExpRate}
+                  onChange={e => { setManualExpRate(e.target.value.replace(/[^0-9.]/g, '')); setActiveError(null); }}
+                  className={'w-full border rounded-lg px-3 pr-8 py-1.5 text-sm outline-none focus:ring-2 focus:ring-orange-400 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 ' + (activeError?.field === 'expRate' ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-zinc-600')}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-zinc-500 pointer-events-none">%</span>
+              </div>
+              {activeError?.field === 'expRate' && <p className="text-xs text-red-500 mt-0.5 px-1">{activeError.msg}</p>}
+            </div>
+            <div>
+              <div className="relative">
                 <input
                   type="text"
                   inputMode="numeric"
-                  placeholder="몬파 보약 (%)"
+                  placeholder="몬파 보약"
                   value={manualMonsterPark}
-                  onChange={e => {
-                    const v = e.target.value.replace(/[^0-9]/g, '');
-                    if (v === '' || parseInt(v) <= 999) setManualMonsterPark(v);
-                  }}
-                  className="flex-1 min-w-0 border border-gray-300 dark:border-zinc-600 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-orange-400 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                  onChange={e => { setManualMonsterPark(e.target.value.replace(/[^0-9]/g, '')); setActiveError(null); }}
+                  className={'w-full border rounded-lg px-3 pr-8 py-1.5 text-sm outline-none focus:ring-2 focus:ring-orange-400 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 ' + (activeError?.field === 'mp' ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-zinc-600')}
                 />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-zinc-500 pointer-events-none">%</span>
+              </div>
+              {activeError?.field === 'mp' && <p className="text-xs text-red-500 mt-0.5 px-1">{activeError.msg}</p>}
+            </div>
+            <div>
+              <div className="relative">
                 <input
                   type="text"
                   inputMode="numeric"
-                  placeholder="에던 보약 (%)"
+                  placeholder="에픽 던전 보약"
                   value={manualEpicDungeon}
-                  onChange={e => {
-                    const v = e.target.value.replace(/[^0-9]/g, '');
-                    if (v === '' || parseInt(v) <= 999) setManualEpicDungeon(v);
-                  }}
-                  className="flex-1 min-w-0 border border-gray-300 dark:border-zinc-600 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-orange-400 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                  onChange={e => { setManualEpicDungeon(e.target.value.replace(/[^0-9]/g, '')); setActiveError(null); }}
+                  className={'w-full border rounded-lg px-3 pr-8 py-1.5 text-sm outline-none focus:ring-2 focus:ring-orange-400 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 ' + (activeError?.field === 'ep' ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-zinc-600')}
                 />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-zinc-500 pointer-events-none">%</span>
               </div>
+              {activeError?.field === 'ep' && <p className="text-xs text-red-500 mt-0.5 px-1">{activeError.msg}</p>}
             </div>
             <button
               onClick={() => {
-                if (manualValid) onConfirm({
+                const err = getFirstError();
+                if (err) { setActiveError(err); return; }
+                onConfirm({
                   name: manualName.trim(),
                   level: manualLv,
                   class: '',
                   world: '',
                   monsterParkBonus: manualMonsterPark ? parseInt(manualMonsterPark) : 0,
                   epicDungeonBonus: manualEpicDungeon ? parseInt(manualEpicDungeon) : 0,
+                  expRate: manualExpRateVal,
                 });
               }}
-              disabled={!manualValid}
-              className="px-3 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600 disabled:opacity-50 cursor-pointer transition-colors whitespace-nowrap shrink-0"
+              className="w-full py-1.5 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600 cursor-pointer transition-colors"
             >
               추가
             </button>

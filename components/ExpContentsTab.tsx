@@ -92,7 +92,6 @@ function SectionTable({ title, headerColor, titleColor, rows, levelLabel, valueL
 // ─── DungeonTable ─────────────────────────────────────────────────────────────
 
 interface BonusEntry { name: string; pct: number; }
-type StageKey = 'stage0' | 'stage1' | 'stage2';
 
 interface DungeonTableProps {
   title: string;
@@ -110,6 +109,8 @@ interface DungeonTableProps {
   scrollKey?: string;
   fillHeight?: boolean;
 }
+
+type StageKey = 'stage0' | 'stage1' | 'stage2';
 
 function DungeonTable({ title, levels, data, metacoin, charLevel, headerColor, titleColor, badgeColor, rowBg, textColor, epicDungeonBonus, epicDungeonBonuses, scrollKey, fillHeight = true }: DungeonTableProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -199,7 +200,6 @@ function DungeonTable({ title, levels, data, metacoin, charLevel, headerColor, t
 
                 const makeHandlers = (stage: StageKey) => hasBonus ? {
                   onMouseEnter: (e: React.MouseEvent) => setTooltip({ lv, stage, x: e.clientX, y: e.clientY }),
-                  onMouseMove:  (e: React.MouseEvent) => setTooltip(v => v ? { ...v, x: e.clientX, y: e.clientY } : v),
                   onMouseLeave: () => setTooltip(null),
                   onTouchStart: (e: React.TouchEvent) => { e.stopPropagation(); setTooltip(v => v?.lv === lv && v?.stage === stage ? null : { lv, stage, x: e.touches[0].clientX, y: e.touches[0].clientY }); },
                 } : { onMouseLeave: () => setTooltip(null) };

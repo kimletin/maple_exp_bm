@@ -9,6 +9,8 @@ const SIM_KEY = 'haru1sojae-simulator';
 const PRESETS_KEY = 'haru1sojae-presets';
 const PRESET_NAMES_KEY = 'haru1sojae-preset-names';
 const ACTIVE_PRESET_KEY = 'haru1sojae-active-preset';
+const CHAR_META_KEY = 'haru1sojae-char-meta';
+const HIST_TODAY_KEY = (ocid: string) => `maple-hist-today-${ocid}`;
 
 function calcLevelUp(
   startLevel: number,
@@ -91,10 +93,29 @@ export default function SimulatorTab() {
         } catch {}
       }
 
+      // 오늘 경험치 캐시 (stale 포함) 읽어서 현재 경험치 초기화
+      let cachedExpPct: string | null = null;
+      try {
+        const metasRaw = localStorage.getItem(CHAR_META_KEY);
+        if (metasRaw) {
+          const metas = JSON.parse(metasRaw);
+          const ocid = metas?.[activeIdx]?.ocid;
+          if (ocid) {
+            const todayRaw = localStorage.getItem(HIST_TODAY_KEY(ocid));
+            if (todayRaw) {
+              const { data } = JSON.parse(todayRaw);
+              if (data?.expRate != null) {
+                cachedExpPct = parseFloat(data.expRate).toFixed(3);
+              }
+            }
+          }
+        }
+      } catch {}
+
       setState({
         nickname: sim?.nickname ?? defaultNickname,
         level:    sim?.level    ?? defaultLevel,
-        expPct:   sim?.expPct   ?? '0.000',
+        expPct:   cachedExpPct ?? sim?.expPct ?? '0.000',
         potionBuff: sim?.potionBuff ?? '0',
         rounds:   sim?.rounds   ?? 7,
       });
