@@ -102,7 +102,7 @@ export default function CharacterCard({ name, level, meta, onMetaUpdate, onToday
   const [loadingHist, setLoadingHist] = useState(false);
   const [ranking, setRanking] = useState<Ranking | null>(null);
   const [barTooltip, setBarTooltip] = useState<{ idx: number; x: number; y: number } | null>(null);
-  const [boakTooltip, setBoakTooltip] = useState<{ x: number; y: number } | null>(null);
+  const [boakTooltip, setBoakTooltip] = useState<{ x: number; y: number; name: string; mp?: number; ep?: number } | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const hasApi = !!meta?.ocid;
 
@@ -195,13 +195,17 @@ export default function CharacterCard({ name, level, meta, onMetaUpdate, onToday
     }
     const ocid = meta.ocid;
 
-    // 과거 캐시 로드 (저장 날짜가 오늘과 같아야 유효)
+    // 과거 캐시 로드 (저장 날짜가 오늘과 같아야 유효, 어제 데이터 포함 여부로 완전성 체크)
     let pastCached: HistoryPoint[] | null = null;
+    let pastCacheIncomplete = false;
     try {
       const raw = localStorage.getItem(HIST_PAST_KEY(ocid));
       if (raw) {
         const { savedDate, data } = JSON.parse(raw);
-        if (savedDate === kstDate(0)) pastCached = data;
+        if (savedDate === kstDate(0)) {
+          pastCached = data;
+          pastCacheIncomplete = !data.some((p: HistoryPoint) => p.date === kstDate(1));
+        }
       }
     } catch {}
 
@@ -241,19 +245,21 @@ export default function CharacterCard({ name, level, meta, onMetaUpdate, onToday
 
     if (!cachedRanking) fetchRanking();
 
-    // 오늘 경험치 TTL 캐시 확인
+    // 오늘 경험치 캐시 확인 (TTL 유효 여부와 무관하게 항상 로드 — 만료된 캐시는 fallback으로 사용)
     let todayCached: HistoryPoint | null = null;
+    let todayCacheStale = false;
     try {
       const raw = localStorage.getItem(HIST_TODAY_KEY(ocid));
       if (raw) {
         const { savedAt, data } = JSON.parse(raw);
-        if (Date.now() - savedAt < TODAY_TTL_MS) todayCached = data;
+        todayCached = data;
+        todayCacheStale = Date.now() - savedAt >= TODAY_TTL_MS;
       }
     } catch {}
 
     if (todayCached) {
       setTodayData(todayCached);
-      sessionToday.set(ocid, todayCached);
+      if (!todayCacheStale) sessionToday.set(ocid, todayCached); // 신선한 캐시만 세션에 등록
       onTodayLoaded?.(todayCached.expRate);
     }
 
@@ -270,6 +276,7 @@ export default function CharacterCard({ name, level, meta, onMetaUpdate, onToday
           onTodayLoaded?.(data[0].expRate);
           try { localStorage.setItem(HIST_TODAY_KEY(ocid), JSON.stringify({ savedAt: Date.now(), data: data[0] })); } catch {}
         }
+        // API 실패(빈 배열) 시 이미 표시 중인 캐시 fallback을 그대로 유지
       } catch {} finally {
         activeFetches.delete(key);
       }
@@ -282,7 +289,7 @@ export default function CharacterCard({ name, level, meta, onMetaUpdate, onToday
       try {
         const res = await fetch(`/api/character/history?ocid=${encodeURIComponent(ocid)}`);
         const data: HistoryPoint[] = await res.json();
-        if (Array.isArray(data)) {
+        if (Array.isArray(data) && data.length > 0) {
           const today = kstDate(0);
           const past = data.filter(p => p.date !== today);
           const todayPoint = data.find(p => p.date === today) ?? null;
@@ -295,14 +302,15 @@ export default function CharacterCard({ name, level, meta, onMetaUpdate, onToday
             try { localStorage.setItem(HIST_TODAY_KEY(ocid), JSON.stringify({ savedAt: Date.now(), data: todayPoint })); } catch {}
           }
         }
+        // API 점검 등으로 빈 배열 반환 시 기존 캐시 유지 (덮어쓰지 않음)
       } finally {
         activeFetches.delete(ocid);
         setLoadingHist(false);
       }
     }
 
-    if (pastCached) {
-      if (!cachedToday && !todayCached) {
+    if (pastCached && !pastCacheIncomplete) {
+      if (!cachedToday && (!todayCached || todayCacheStale)) {
         setLoadingHist(true);
         fetchToday().finally(() => setLoadingHist(false));
       }
@@ -385,23 +393,39 @@ export default function CharacterCard({ name, level, meta, onMetaUpdate, onToday
                   </div>
                 )}
                 {(() => {
-                  const all = [...(meta?.monsterParkBonuses ?? []), ...(meta?.epicDungeonBonuses ?? [])];
-                  if (all.length === 0) return null;
+                  const mpBonuses = meta?.monsterParkBonuses ?? [];
+                  const epBonuses = meta?.epicDungeonBonuses ?? [];
+                  // 이름 기준으로 병합: 하나의 보약이 몬파+에픽 효과를 모두 가질 수 있음
+                  const bonusMap = new Map<string, { name: string; icon?: string | null; mp?: number; ep?: number }>();
+                  for (const b of mpBonuses) bonusMap.set(b.name, { name: b.name, icon: b.icon, mp: b.pct });
+                  for (const b of epBonuses) {
+                    const ex = bonusMap.get(b.name);
+                    if (ex) ex.ep = b.pct;
+                    else bonusMap.set(b.name, { name: b.name, icon: b.icon, ep: b.pct });
+                  }
+                  const mergedBonuses = Array.from(bonusMap.values());
+                  if (mergedBonuses.length === 0) return null;
                   return (
                     <div className="flex gap-2 items-center mt-0.5">
                       <span className="w-6 text-gray-400 dark:text-zinc-500 shrink-0">보약</span>
-                      <div
-                        className="flex items-center gap-1 flex-wrap cursor-default"
-                        onMouseEnter={e => setBoakTooltip({ x: e.clientX, y: e.clientY })}
-                        onMouseMove={e => setBoakTooltip(v => v ? { ...v, x: e.clientX, y: e.clientY } : v)}
-                        onMouseLeave={() => setBoakTooltip(null)}
-                      >
-                        {all.filter(b => b.icon).map(b => (
-                          <img key={b.name} src={b.icon!} alt={b.name} className="w-5 h-5 rounded" />
+                      <div className="flex items-center gap-1 flex-wrap cursor-default">
+                        {mergedBonuses.map(b => (
+                          b.icon
+                            ? <img
+                                key={b.name}
+                                src={b.icon}
+                                alt={b.name}
+                                className="w-5 h-5 rounded"
+                                onMouseEnter={e => setBoakTooltip({ x: e.clientX, y: e.clientY, name: b.name, mp: b.mp, ep: b.ep })}
+                                onMouseLeave={() => setBoakTooltip(null)}
+                              />
+                            : <span
+                                key={b.name}
+                                className="w-5 h-5 flex items-center justify-center text-[10px] font-bold bg-orange-100 dark:bg-orange-900/40 text-orange-500 rounded"
+                                onMouseEnter={e => setBoakTooltip({ x: e.clientX, y: e.clientY, name: b.name, mp: b.mp, ep: b.ep })}
+                                onMouseLeave={() => setBoakTooltip(null)}
+                              >보</span>
                         ))}
-                        {all.some(b => !b.icon) && (
-                          <span className="w-5 h-5 flex items-center justify-center text-[10px] font-bold bg-orange-100 dark:bg-orange-900/40 text-orange-500 rounded">E</span>
-                        )}
                       </div>
                     </div>
                   );
@@ -445,7 +469,6 @@ export default function CharacterCard({ name, level, meta, onMetaUpdate, onToday
                     key={slot.date}
                     className="flex flex-col items-center gap-1 flex-1 min-w-0 relative cursor-pointer"
                     onMouseEnter={e => slot.expRate !== null && setBarTooltip({ idx: i, x: e.clientX, y: e.clientY })}
-                    onMouseMove={e => slot.expRate !== null && setBarTooltip(v => v ? { ...v, x: e.clientX, y: e.clientY } : v)}
                     onMouseLeave={() => setBarTooltip(null)}
                     onTouchStart={e => { e.stopPropagation(); setBarTooltip(v => v?.idx === i ? null : { idx: i, x: e.touches[0].clientX, y: e.touches[0].clientY }); }}
                   >
@@ -479,30 +502,20 @@ export default function CharacterCard({ name, level, meta, onMetaUpdate, onToday
       </div>
 
       {/* 보약 툴팁 */}
-      {boakTooltip !== null && (() => {
-        const mpBonuses = meta?.monsterParkBonuses ?? [];
-        const epBonuses = meta?.epicDungeonBonuses ?? [];
-        if (mpBonuses.length === 0 && epBonuses.length === 0) return null;
-        return (
-          <div
-            style={{ position: 'fixed', left: boakTooltip.x + 14, top: boakTooltip.y + 14 }}
-            className="bg-gray-800 text-white text-[11px] rounded-lg px-2.5 py-2 z-50 pointer-events-none whitespace-nowrap leading-relaxed shadow-lg"
-          >
-            {mpBonuses.map((b, i) => (
-              <div key={b.name} className={i > 0 ? 'mt-1.5' : ''}>
-                <div className="text-orange-200 font-semibold">{b.name}</div>
-                <div className="text-gray-200">몬스터파크 경험치 <span className="text-orange-300">+{b.pct}%</span></div>
-              </div>
-            ))}
-            {epBonuses.map((b, i) => (
-              <div key={b.name} className={mpBonuses.length > 0 || i > 0 ? 'mt-1.5' : ''}>
-                <div className="text-orange-200 font-semibold">{b.name}</div>
-                <div className="text-gray-200">에픽 던전 기본 보상 <span className="text-orange-300">+{b.pct}%</span></div>
-              </div>
-            ))}
-          </div>
-        );
-      })()}
+      {boakTooltip !== null && (
+        <div
+          style={{ position: 'fixed', left: boakTooltip.x + 14, top: boakTooltip.y + 14 }}
+          className="bg-gray-800 text-white text-[11px] rounded-lg px-2.5 py-2 z-50 pointer-events-none whitespace-nowrap leading-relaxed shadow-lg"
+        >
+          <div className="text-orange-200 font-semibold mb-0.5">{boakTooltip.name}</div>
+          {boakTooltip.mp != null && (
+            <div className="text-gray-200">몬스터파크 경험치 <span className="text-orange-300">+{boakTooltip.mp}%</span></div>
+          )}
+          {boakTooltip.ep != null && (
+            <div className="text-gray-200">에픽 던전 기본 보상 <span className="text-orange-300">+{boakTooltip.ep}%</span></div>
+          )}
+        </div>
+      )}
 
       {/* 히스토리 바 툴팁 */}
       {barTooltip !== null && slots[barTooltip.idx].expRate !== null && (() => {

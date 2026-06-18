@@ -263,7 +263,7 @@ export default function Home() {
       monsterParkBonus: mpBonus || null,
       epicDungeonBonus: epBonus || null,
       monsterParkBonuses: mpBonus > 0 ? [{ name: '몬파 보약', pct: mpBonus, icon: null }] : null,
-      epicDungeonBonuses: epBonus > 0 ? [{ name: '에던 보약', pct: epBonus, icon: null }] : null,
+      epicDungeonBonuses: epBonus > 0 ? [{ name: '에픽 던전 보약', pct: epBonus, icon: null }] : null,
       skillUpdatedAt: mpBonus > 0 || epBonus > 0 ? Date.now() : null,
     };
     setCharMetas(prev => {
@@ -272,6 +272,16 @@ export default function Home() {
       try { localStorage.setItem(CHAR_META_KEY, JSON.stringify(next)); } catch {}
       return next;
     });
+
+    // 수동 입력 경험치가 있으면 today 캐시에 저장
+    if (info.expRate != null && (meta.ocid || info.name)) {
+      const cacheKey = meta.ocid
+        ? `maple-hist-today-${meta.ocid}`
+        : `maple-hist-today-manual-${info.name}`;
+      const todayData = { date: new Date().toISOString().slice(0, 10), expRate: info.expRate, level: info.level, exp: 0 };
+      try { localStorage.setItem(cacheKey, JSON.stringify({ savedAt: Date.now(), data: todayData })); } catch {}
+      if (idx === activePresetRef.current) setTodayExpRate(info.expRate);
+    }
 
     setShowSearchModal(false);
     setIsFirstVisit(false);
@@ -382,15 +392,18 @@ export default function Home() {
     let abortCtrl: AbortController | null = null;
 
     const run = async () => {
+      let cacheStale = false;
       try {
         const raw = localStorage.getItem(histKey);
         if (raw) {
           const { savedAt, data } = JSON.parse(raw);
+          // stale 여부 관계없이 캐시가 있으면 즉시 표시
+          if (data?.expRate != null) setTodayExpRate(data.expRate);
           if (Date.now() - savedAt < TTL) {
-            setTodayExpRate(data?.expRate ?? null);
             sessionTodayFetched.add(currentOcid);
             return;
           }
+          cacheStale = true;
         }
       } catch {}
 
@@ -404,6 +417,7 @@ export default function Home() {
           setTodayExpRate(today.expRate ?? null);
           try { localStorage.setItem(histKey, JSON.stringify({ savedAt: Date.now(), data: today })); } catch {}
         }
+        // API 점검 등 빈 배열 반환 시 기존 캐시 유지 (덮어쓰지 않음)
       } catch (e) {
         if ((e as Error).name === 'AbortError') return;
       }

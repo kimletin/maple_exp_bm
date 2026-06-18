@@ -202,10 +202,10 @@ export function calcAllItems(inputs: InputValues, monsterParkBonus: number = 0):
     item('사냥 칭호',           '30일 도핑', base30d * 1,    inputs.priceHunterTitle),
     item('혈맹의 반지(메소)',    '30일 도핑', base30d * 0.1,  inputs.priceBloodRingMeso),
     item('경험치 부스트링(메소)',       '30일 도핑', base30d * 0.15, inputs.priceBoostringMeso),
-    item('정펜(메소)',           '30일 도핑', base30d * 0.3,  inputs.priceJungpenMeso),
+    item('정령의 펜던트(메소)',           '30일 도핑', base30d * 0.3,  inputs.priceJungpenMeso),
     item('혈맹의 반지(메포)',    '30일 도핑', base30d * 0.1,  bloodRingMetaPrice),
     item('경험치 부스트링(메포)',       '30일 도핑', base30d * 0.15, boostringMetaPrice),
-    item('정펜(메포)',           '30일 도핑', base30d * 0.3,  jungpenMetaPrice),
+    item('정령의 펜던트(메포)',           '30일 도핑', base30d * 0.3,  jungpenMetaPrice),
     // BM
     item(`${epicName} 0→1단계`, 'BM', stage01Exp, stage01Price),
     item(`${epicName} 1→2단계`, 'BM', stage12Exp, stage12Price),
