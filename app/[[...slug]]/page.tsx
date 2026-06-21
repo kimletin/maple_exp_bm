@@ -163,7 +163,7 @@ export default function Home() {
   const [presetNames, setPresetNames] = useState<string[]>([...DEFAULT_NAMES]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [dropGap, setDropGap] = useState<number | null>(null); // 삽입 위치(0~numSlots)
   const [numSlots, setNumSlots] = useState(DEFAULT_NUM_SLOTS);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchModalTarget, setSearchModalTarget] = useState(0);
@@ -178,16 +178,20 @@ export default function Home() {
     const slug = window.location.pathname.replace(/^\//, '');
     const parts = slug.split('/');
     const tabSlug = parts[0];
-    const tab = PARAM_TO_TAB[tabSlug] ?? PARAM_TO_TAB[slug];
+
+    // 첫 방문(캐시 없음)이면 어느 탭으로 들어와도 효율표 탭으로 redirect
+    const isNew = !localStorage.getItem(PRESETS_KEY) && !localStorage.getItem(STORAGE_KEY);
+
+    const tab = isNew ? null : (PARAM_TO_TAB[tabSlug] ?? PARAM_TO_TAB[slug]);
     const initialTab = tab ?? TABS[0];
     if (tab) setActiveTab(tab);
-    if (tabSlug === 'cont' && parts[1]) setInitialContentKey(parts[1]);
+    if (tab && tabSlug === 'cont' && parts[1]) setInitialContentKey(parts[1]);
     document.title = `${initialTab} | 하루1소재`;
+    if (isNew) window.history.replaceState({}, '', '/');
 
     const savedSlots = parseInt(localStorage.getItem(NUM_SLOTS_KEY) ?? '');
     if (!isNaN(savedSlots)) setNumSlots(Math.min(Math.max(savedSlots, 1), NUM_PRESETS));
 
-    const isNew = !localStorage.getItem(PRESETS_KEY) && !localStorage.getItem(STORAGE_KEY);
     if (isNew) {
       setIsFirstVisit(true);
       setSearchModalTarget(0);
@@ -271,21 +275,12 @@ export default function Home() {
     saveNames(newNames);
   };
 
-  const handleCharacterConfirm = (info: CharacterInfo) => {
-    const idx = searchModalTarget;
-    // 새 슬롯이면 이때 추가
-    if (idx >= numSlots) {
-      const newSlots = idx + 1;
-      setNumSlots(newSlots);
-      try { localStorage.setItem(NUM_SLOTS_KEY, String(newSlots)); } catch {}
-    }
-    handleNameChange(idx, info.name.slice(0, 12));
-    const newPresets = [...presetsRef.current];
-    const charLevel = Math.min(Math.max(info.level, 260), 300);
+  const getInitialInputs = (level: number): InputValues => {
+    const charLevel = Math.min(Math.max(level, 260), 300);
     const { region, ground } = getDefaultHunting(charLevel);
     const epicZone = charLevel >= 280 ? '악몽선경' : charLevel >= 270 ? '앵컴' : '하이마운틴';
-    newPresets[idx] = {
-      ...newPresets[idx],
+    return {
+      ...DEFAULT_INPUTS,
       charLevel,
       huntingRegion: region,
       huntingGround: ground.name,
@@ -295,6 +290,19 @@ export default function Home() {
       boosterMonsterLevel: ground.boosterLevel ?? ground.mobs[ground.mobs.length - 1].level,
       epicDungeonZone: epicZone,
     };
+  };
+
+  const handleCharacterConfirm = (info: CharacterInfo, inputs: InputValues) => {
+    const idx = searchModalTarget;
+    // 새 슬롯이면 이때 추가
+    if (idx >= numSlots) {
+      const newSlots = idx + 1;
+      setNumSlots(newSlots);
+      try { localStorage.setItem(NUM_SLOTS_KEY, String(newSlots)); } catch {}
+    }
+    handleNameChange(idx, info.name.slice(0, 12));
+    const newPresets = [...presetsRef.current];
+    newPresets[idx] = { ...inputs, charLevel: Math.min(Math.max(info.level, 260), 300) };
     presetsRef.current = newPresets;
     savePresets(newPresets);
     if (idx === activePresetRef.current) setInputs(newPresets[idx]);
@@ -326,14 +334,9 @@ export default function Home() {
       return next;
     });
 
-    // 수동 입력 경험치가 있으면 today 캐시에 저장
-    if (info.expRate != null && (meta.ocid || info.name)) {
-      const cacheKey = meta.ocid
-        ? `maple-hist-today-${meta.ocid}`
-        : `maple-hist-today-manual-${info.name}`;
-      const todayData = { date: new Date().toISOString().slice(0, 10), expRate: info.expRate, level: info.level, exp: 0 };
-      try { localStorage.setItem(cacheKey, JSON.stringify({ savedAt: Date.now(), data: todayData })); } catch {}
-      if (idx === activePresetRef.current) setTodayExpRate(info.expRate);
+    // 수동 입력 경험치가 있으면 즉시 UI 반영 (영구 저장은 meta.manualExpRate / maple-char 캐시가 담당)
+    if (info.expRate != null && idx === activePresetRef.current) {
+      setTodayExpRate(info.expRate);
     }
 
     setShowSearchModal(false);
@@ -372,12 +375,10 @@ export default function Home() {
   const handleDeleteSlot = (idx: number) => {
     if (numSlots <= 1) return;
 
-    // 삭제되는 슬롯의 ocid 캐시 제거
+    // 삭제되는 슬롯의 ocid 캐시 제거 (CharacterCard가 쓰는 실제 키)
     const deletedOcid = charMetas[idx]?.ocid;
     if (deletedOcid) {
-      try { localStorage.removeItem(`maple-hist-past-${deletedOcid}`); } catch {}
-      try { localStorage.removeItem(`maple-hist-today-${deletedOcid}`); } catch {}
-      try { localStorage.removeItem(`maple-ranking-${deletedOcid}`); } catch {}
+      try { localStorage.removeItem(`maple-char-${deletedOcid}`); } catch {}
     }
 
     const newNames = [...presetNames];
@@ -463,6 +464,7 @@ export default function Home() {
         <CharacterSearchModal
           onConfirm={handleCharacterConfirm}
           onClose={isFirstVisit ? undefined : () => setShowSearchModal(false)}
+          getInitialInputs={getInitialInputs}
           existingOcids={charMetas.filter(m => m?.ocid).map(m => m!.ocid!)}
           existingNames={presetNames}
         />
@@ -515,32 +517,50 @@ export default function Home() {
                   key={i}
                   draggable
                   onDragStart={() => setDragIndex(i)}
-                  onDragOver={e => { e.preventDefault(); setDragOverIndex(i); }}
-                  onDrop={() => { handleReorder(dragIndex ?? i, i); setDragIndex(null); setDragOverIndex(null); }}
-                  onDragEnd={() => { setDragIndex(null); setDragOverIndex(null); }}
-                  className={
-                    'flex items-center h-7 rounded-lg border text-xs transition-colors select-none ' +
-                    (dragOverIndex === i && dragIndex !== i
-                      ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20'
-                      : (charMetas[i] && !charMetas[i].ocid
-                          ? 'border-dashed border-gray-300 dark:border-zinc-500 bg-gray-50 dark:bg-zinc-800'
-                          : 'border-gray-200 dark:border-zinc-600 bg-gray-50 dark:bg-zinc-800'))
-                  }
+                  onDragOver={e => {
+                    e.preventDefault();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setDropGap(e.clientX > rect.left + rect.width / 2 ? i + 1 : i);
+                  }}
+                  onDrop={() => {
+                    if (dragIndex !== null && dropGap !== null) {
+                      const to = dropGap > dragIndex ? dropGap - 1 : dropGap;
+                      handleReorder(dragIndex, to);
+                    }
+                    setDragIndex(null); setDropGap(null);
+                  }}
+                  onDragEnd={() => { setDragIndex(null); setDropGap(null); }}
+                  className={'relative ' + (dragIndex === i ? 'opacity-40' : '')}
                 >
-                  <span className="px-1.5 cursor-grab text-gray-400 dark:text-zinc-500">
-                    <svg width="8" height="13" viewBox="0 0 8 13" fill="currentColor">
-                      <circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/>
-                      <circle cx="2" cy="6.5" r="1.2"/><circle cx="6" cy="6.5" r="1.2"/>
-                      <circle cx="2" cy="11" r="1.2"/><circle cx="6" cy="11" r="1.2"/>
-                    </svg>
-                  </span>
-                  <span className="px-1.5 text-gray-700 dark:text-zinc-300 font-semibold">{presetNames[i]}</span>
-                  <button
-                    onClick={() => handleDeleteSlot(i)}
-className={`px-1.5 transition-colors cursor-pointer ${numSlots === 1 ? 'text-gray-200 dark:text-zinc-700 cursor-not-allowed' : 'text-gray-400 hover:text-red-500 dark:hover:text-red-400'}`}
+                  {dragIndex !== null && dropGap === i && (
+                    <span className="absolute -left-[5px] top-0 bottom-0 w-[3px] bg-orange-500 rounded-full pointer-events-none" />
+                  )}
+                  {dragIndex !== null && dropGap === numSlots && i === numSlots - 1 && (
+                    <span className="absolute -right-[5px] top-0 bottom-0 w-[3px] bg-orange-500 rounded-full pointer-events-none" />
+                  )}
+                  <div
+                    className={
+                      'flex items-center h-7 rounded-lg border text-xs transition-colors select-none ' +
+                      (charMetas[i] && !charMetas[i].ocid
+                        ? 'border-dashed border-gray-300 dark:border-zinc-500 bg-gray-50 dark:bg-zinc-800'
+                        : 'border-gray-200 dark:border-zinc-600 bg-gray-50 dark:bg-zinc-800')
+                    }
                   >
-                    ×
-                  </button>
+                    <span className="px-1.5 cursor-grab text-gray-400 dark:text-zinc-500">
+                      <svg width="8" height="13" viewBox="0 0 8 13" fill="currentColor">
+                        <circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/>
+                        <circle cx="2" cy="6.5" r="1.2"/><circle cx="6" cy="6.5" r="1.2"/>
+                        <circle cx="2" cy="11" r="1.2"/><circle cx="6" cy="11" r="1.2"/>
+                      </svg>
+                    </span>
+                    <span className="px-1.5 text-gray-700 dark:text-zinc-300 font-semibold">{presetNames[i]}</span>
+                    <button
+                      onClick={() => handleDeleteSlot(i)}
+                      className={`px-1.5 transition-colors cursor-pointer ${numSlots === 1 ? 'text-gray-200 dark:text-zinc-700 cursor-not-allowed' : 'text-gray-400 hover:text-red-500 dark:hover:text-red-400'}`}
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <button

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { HUNTING_REGIONS } from '@/data/huntingGrounds';
 import type { HuntingGround } from '@/data/huntingGrounds';
 import type { MobGroup } from '@/types';
+import { lockScroll, unlockScroll } from '@/lib/scrollLock';
 
 interface Props {
   currentRegion: string;
@@ -35,12 +36,8 @@ function regionLevelRange(regionName: string): string {
 
 export default function HuntingGroundModal({ currentRegion, currentGround, charLevel, onConfirm, onClose }: Props) {
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
-    };
+    lockScroll();
+    return unlockScroll;
   }, []);
 
   const [selectedRegion, setSelectedRegion] = useState(currentRegion);

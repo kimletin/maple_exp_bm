@@ -56,7 +56,7 @@ function SectionTable({ title, headerColor, titleColor, rows, levelLabel, valueL
       <div className={'px-4 py-2.5 border-b shrink-0 ' + headerColor}>
         <h3 className={'text-sm font-semibold text-center ' + titleColor}>{title}</h3>
       </div>
-      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-scroll">
         <table className="table-fixed text-sm border-collapse w-full">
           <colgroup>
             <col style={{width:'50%'}} />
@@ -178,7 +178,7 @@ function DungeonTable({ title, levels, data, metacoin, charLevel, headerColor, t
       })()}
 
 
-      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-scroll">
         <div ref={tableRef}>
           <table className="table-fixed text-sm border-collapse w-full">
             <thead className="sticky top-0 z-10">
@@ -583,7 +583,7 @@ function TreasureHunterTable({ monsterLevel, charLevel, treasureBonus = 0, treas
       <div className="bg-orange-200 dark:bg-orange-900/50 border-b border-orange-200 dark:border-orange-800 px-4 py-2.5 shrink-0">
         <h3 className="text-sm font-semibold text-center text-gray-800 dark:text-zinc-100">{TREASURE_BOX_META[selectedBox].label}</h3>
       </div>
-      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-scroll">
         <table className="table-fixed text-sm border-collapse w-full">
           <colgroup>
             <col style={{width:'16%'}} />
@@ -976,7 +976,7 @@ export default function ExpContentsTab({ charLevel, monsterLevel, monsterParkBon
                   <div className="bg-orange-200 dark:bg-orange-900/50 border-b border-orange-200 dark:border-orange-800 px-4 py-2.5 shrink-0">
                     <h3 className="text-sm font-semibold text-center text-gray-800 dark:text-zinc-100">몬스터파크</h3>
                   </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto">
+                  <div className="flex-1 min-h-0 overflow-y-scroll">
                     <div>
                       <table className="table-fixed w-full text-sm border-collapse">
                         <colgroup>

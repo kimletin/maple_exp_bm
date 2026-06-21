@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { InputValues } from '@/types';
+import { lockScroll, unlockScroll } from '@/lib/scrollLock';
 
 interface Props {
   values: InputValues;
@@ -47,12 +48,8 @@ function Field({ label, value, onChange, unit = '메소', max = 9_999_999_999, d
 
 export default function PriceInfoModal({ values, onApply, onClose }: Props) {
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
-    };
+    lockScroll();
+    return unlockScroll;
   }, []);
 
   const [local, setLocal] = useState<PriceFields>({

@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
     const { ocid } = await ocidRes.json();
 
     const charRes = await fetchWithTimeout(
-      `https://open.api.nexon.com/maplestory/v1/character/basic?ocid=${ocid}`,
+      `https://open.api.nexon.com/maplestory/v1/character/basic?ocid=${encodeURIComponent(ocid)}`,
       { headers }
     );
 

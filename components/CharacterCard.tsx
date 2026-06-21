@@ -159,44 +159,67 @@ export default function CharacterCard({ name, level, meta, onMetaUpdate, onToday
         fetch(`/api/character/skill?ocid=${encodeURIComponent(ocid)}`).then(r => r.json()),
       ]);
 
-      const isSuccess = Array.isArray(histData);
-      const hist: HistoryPoint[] = isSuccess ? histData : [];
-      const rank: Ranking | null = rankData ?? null;
-      const todayPoint = hist.find(p => p.date === kstDate(0)) ?? null;
+      // 소스별 성공 판정 (하나가 실패해도 나머지는 독립적으로 반영)
+      const histOk  = Array.isArray(histData);
+      const rankOk  = rankData && typeof rankData === 'object' && rankData.error === undefined;
+      const imageOk = imageData && imageData.image !== undefined;
+      const skillOk = skillData && skillData.monsterParkBonus !== undefined;
 
-      setHistory(hist);
-      setRanking(rank);
-      onTodayLoaded?.(todayPoint?.expRate ?? null);
+      // 표시 갱신 — 성공한 것만 (실패 시 기존 값 유지)
+      if (histOk) {
+        const hist: HistoryPoint[] = histData;
+        const todayPoint = hist.find(p => p.date === kstDate(0)) ?? null;
+        setHistory(hist);
+        onTodayLoaded?.(todayPoint?.expRate ?? null);
+      }
+      if (rankOk) setRanking(rankData);
 
-      if (isSuccess) {
+      // 메타(이미지/직업/월드/길드/보약/레벨) — 히스토리와 무관하게 각자 성공 시 저장
+      if (onMetaUpdate && (imageOk || skillOk)) {
+        const metaUpdate: Record<string, unknown> = {};
+        if (imageOk) {
+          metaUpdate.imageUpdatedAt = Date.now();
+          metaUpdate.image = imageData.image;
+          if (imageData.class !== undefined) metaUpdate.class = imageData.class;
+          if (imageData.world !== undefined) metaUpdate.world = imageData.world;
+          if (imageData.guild !== undefined) metaUpdate.guild = imageData.guild;
+        }
+        if (skillOk) {
+          metaUpdate.skillUpdatedAt = Date.now();
+          metaUpdate.monsterParkBonus = skillData.monsterParkBonus;
+          metaUpdate.epicDungeonBonus = skillData.epicDungeonBonus;
+          metaUpdate.monsterParkBonuses = skillData.monsterParkBonuses ?? [];
+          metaUpdate.epicDungeonBonuses = skillData.epicDungeonBonuses ?? [];
+          metaUpdate.treasureBonus = skillData.treasureBonus;
+          metaUpdate.treasureBonuses = skillData.treasureBonuses ?? [];
+        }
+        onMetaUpdate(metaUpdate);
+      }
+      if (onCharLevelUpdate && imageOk && imageData.level != null) {
+        onCharLevelUpdate(imageData.level);
+      }
+
+      // 쿨다운/최근 업데이트 라벨은 히스토리 성공 시에만 시작 (부분 실패 시 즉시 재시도 허용)
+      if (histOk) {
         const savedAt = Date.now();
         refreshedAtMap.current[ocid] = savedAt;
         setLastRefreshedAt(savedAt);
         setLastUpdatedLabel('방금 전');
+      }
 
-        if (onMetaUpdate) {
-          const metaUpdate: Record<string, unknown> = { imageUpdatedAt: savedAt, skillUpdatedAt: savedAt };
-          if (imageData?.image !== undefined) metaUpdate.image = imageData.image;
-          if (imageData?.class !== undefined) metaUpdate.class = imageData.class;
-          if (imageData?.world !== undefined) metaUpdate.world = imageData.world;
-          if (imageData?.guild !== undefined) metaUpdate.guild = imageData.guild;
-          if (skillData?.monsterParkBonus !== undefined) {
-            metaUpdate.monsterParkBonus = skillData.monsterParkBonus;
-            metaUpdate.epicDungeonBonus = skillData.epicDungeonBonus;
-            metaUpdate.monsterParkBonuses = skillData.monsterParkBonuses ?? [];
-            metaUpdate.epicDungeonBonuses = skillData.epicDungeonBonuses ?? [];
-            metaUpdate.treasureBonus = skillData.treasureBonus;
-            metaUpdate.treasureBonuses = skillData.treasureBonuses ?? [];
-          }
-          onMetaUpdate(metaUpdate);
-        }
-        if (onCharLevelUpdate && imageData?.level != null) {
-          onCharLevelUpdate(imageData.level);
-        }
-
+      // 캐시(history/ranking) — 성공한 항목만 갱신, 실패 항목은 기존 캐시 유지
+      if (histOk || rankOk) {
+        let prevCache: { savedAt?: number; history?: HistoryPoint[]; ranking?: Ranking | null } = {};
         try {
-          localStorage.setItem(CHAR_CACHE_KEY(ocid), JSON.stringify({ savedAt: Date.now(), history: hist, ranking: rank }));
+          const raw = localStorage.getItem(CHAR_CACHE_KEY(ocid));
+          if (raw) prevCache = JSON.parse(raw);
         } catch {}
+        const cache = {
+          savedAt: histOk ? Date.now() : (prevCache.savedAt ?? Date.now()),
+          history: histOk ? histData : (prevCache.history ?? []),
+          ranking: rankOk ? rankData : (prevCache.ranking ?? null),
+        };
+        try { localStorage.setItem(CHAR_CACHE_KEY(ocid), JSON.stringify(cache)); } catch {}
       }
     } catch {}
     finally {

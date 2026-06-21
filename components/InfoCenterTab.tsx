@@ -23,7 +23,7 @@ const UPDATES: UpdateEntry[] = [
   {
     date: '2026.06.15.',
     title: '하루1소재 오픈',
-    items: ['소재비 오픈'],
+    items: ['하루1소재 오픈'],
   },
 ];
 

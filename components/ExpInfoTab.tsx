@@ -66,7 +66,7 @@ export default function ExpInfoTab({ charLevel, monsterLevel, huntingMobs }: Pro
           <div className="bg-orange-200 dark:bg-orange-900/50 border-b border-orange-200 dark:border-orange-800 px-4 py-2.5 shrink-0">
             <h3 className="text-sm font-semibold text-center text-gray-800 dark:text-zinc-100">레벨별 필요 경험치</h3>
           </div>
-          <div ref={leftScrollRef} className="overflow-y-auto flex-1 min-h-0">
+          <div ref={leftScrollRef} className="overflow-y-scroll flex-1 min-h-0">
             <table className="table-fixed text-sm border-collapse w-full">
               <colgroup>
                 <col style={{width:'25%'}} />
@@ -108,7 +108,7 @@ export default function ExpInfoTab({ charLevel, monsterLevel, huntingMobs }: Pro
           <div className="bg-orange-200 dark:bg-orange-900/50 border-b border-orange-200 dark:border-orange-800 px-4 py-2.5 shrink-0">
             <h3 className="text-sm font-semibold text-center text-gray-800 dark:text-zinc-100">경험치 패널티</h3>
           </div>
-          <div ref={rightScrollRef} className="overflow-y-auto flex-1 min-h-0">
+          <div ref={rightScrollRef} className="overflow-y-scroll flex-1 min-h-0">
             <table className="table-fixed text-sm border-collapse w-full">
               <colgroup>
                 <col style={{width:'50%'}} />
