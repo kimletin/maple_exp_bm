@@ -43,15 +43,29 @@ async function fetchNotice(url: string, listKey: string, apiKey: string) {
   }
 }
 
+// 빈 결과(넥슨 점검 등)는 캐시에 저장하지 않음(no-store) → CDN은 마지막 정상본을 계속 제공.
+const EMPTY_RESPONSE = { error: 'no data', notice: [], update: [], event: [] } as const;
+const EMPTY_HEADERS = { 'Cache-Control': 'no-store' };
+
 export async function GET() {
   const apiKey = process.env.NEXON_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ notice: [], update: [], event: [] });
+    return NextResponse.json(EMPTY_RESPONSE, { status: 503, headers: EMPTY_HEADERS });
   }
 
   const [notice, update, event] = await Promise.all(
     ENDPOINTS.map((e) => fetchNotice(e.url, e.listKey, apiKey))
   );
 
-  return NextResponse.json({ notice, update, event });
+  // 넥슨 점검 등으로 전부 비면 503 + no-store. CDN이 덮어쓰지 않고(stale-if-error)
+  // 마지막 정상본을 계속 보여줌. 한 번이라도 정상이면 30분 캐시 + 만료 후 백그라운드 갱신.
+  const hasData = notice.length > 0 || update.length > 0 || event.length > 0;
+  if (!hasData) {
+    return NextResponse.json(EMPTY_RESPONSE, { status: 503, headers: EMPTY_HEADERS });
+  }
+
+  return NextResponse.json(
+    { notice, update, event },
+    { headers: { 'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=86400, stale-if-error=86400' } }
+  );
 }
