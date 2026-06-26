@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import UpdateTimeline from '@/components/UpdateTimeline';
 
-const SECTIONS = ['패치 노트', '도움말'] as const;
+const SECTIONS = ['업데이트 내역', '도움말'] as const;
 type Section = typeof SECTIONS[number];
 
 export default function InfoCenterTab() {
-  const [activeSection, setActiveSection] = useState<Section>('패치 노트');
+  const [activeSection, setActiveSection] = useState<Section>('업데이트 내역');
 
   return (
     <div className="w-full flex flex-col">
@@ -33,7 +33,7 @@ export default function InfoCenterTab() {
           <h3 className="text-sm font-semibold text-center text-gray-800 dark:text-zinc-100">{activeSection}</h3>
         </div>
 
-        {activeSection === '패치 노트' && (
+        {activeSection === '업데이트 내역' && (
           <div className="p-6 flex-1">
             <UpdateTimeline />
           </div>

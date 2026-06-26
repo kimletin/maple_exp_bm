@@ -610,6 +610,7 @@ export default function Home() {
       ) : (
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="w-[905px] mx-auto">
+          {activeTab !== '정보 센터' && (
           <div className="mb-2 flex items-center gap-1.5">
             <span className="text-xs text-gray-400 dark:text-zinc-500">캐릭터</span>
             {Array.from({ length: numSlots }, (_, i) => (
@@ -698,6 +699,7 @@ export default function Home() {
               </button>
             )}
           </div>
+          )}
           {activeTab === TABS[0] ? (
             numSlots === 0 ? (
               <div className="flex flex-col items-center justify-center gap-4 text-center py-24">
