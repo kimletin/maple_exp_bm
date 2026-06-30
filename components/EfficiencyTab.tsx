@@ -69,7 +69,7 @@ function EffTable({ title, rows, color = 'green', headerExtra }: {
         <tbody>
           {rows.map((row, i) => (
             <tr key={i} style={{ height: 36 }} className={"border-b transition-colors " + (row.isEvent ? "bg-amber-50 dark:bg-amber-900/40 hover:bg-amber-100 border-amber-100 dark:border-amber-800" : "border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-700:bg-gray-700")}>
-              <td className="px-2 py-1.5 text-center text-gray-800 dark:text-zinc-200">
+              <td className="px-2 py-1.5 text-center text-gray-700 dark:text-zinc-300">
                 <span className="inline-flex items-center justify-center gap-0.5 flex-wrap">
                   <ItemName name={row.name} />
                   {row.isEvent && <span className="text-xs font-medium bg-amber-400 text-white px-1.5 py-0.5 rounded-full">E</span>}

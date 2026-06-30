@@ -19,8 +19,8 @@
 
 ## 파일 편집 안전 규칙
 
-- `page.tsx`처럼 큰 파일은 Edit 툴 대신 반드시 Python `data.replace(old, new, 1)` 방식으로 수정한다.
-- 수정 전 항상 `assert old in data`로 패턴 존재 여부를 확인한다.
+- `page.tsx`·`ExpContentsTab.tsx`처럼 큰 파일도 **Edit 툴로 수정한다.** (Python `data.replace`는 Bash 경유라 토큰을 많이 쓰면 분류기가 막혀 실행이 거부되는 경우가 있음 → Edit 툴이 더 안정적)
+- Edit 시 `old_string`은 **충분히 고유한 범위**로 잡는다. 큰 블록을 제거/이동할 때는 시작·끝 경계가 명확한 단위(예: `{selected === 'X' && (...)}` 블록 전체)로 한 번에 처리한다.
 - 수정 후 항상 `npx tsc --noEmit`으로 타입 에러를 확인한다.
 
 ## 검증 / 서버 실행 규칙

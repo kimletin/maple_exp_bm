@@ -1,5 +1,7 @@
 'use client';
 
+import CardHeader from '@/components/CardHeader';
+
 import { useState } from 'react';
 import UpdateTimeline from '@/components/UpdateTimeline';
 
@@ -29,9 +31,7 @@ export default function InfoCenterTab() {
       </div>
 
       <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-700 shadow-sm overflow-hidden flex flex-col">
-        <div className="bg-orange-200 dark:bg-orange-900/50 border-b border-orange-200 dark:border-orange-800 px-4 py-2.5 shrink-0">
-          <h3 className="text-sm font-semibold text-center text-gray-800 dark:text-zinc-100">{activeSection}</h3>
-        </div>
+        <CardHeader title={activeSection} className="shrink-0" />
 
         {activeSection === '업데이트 내역' && (
           <div className="p-6 flex-1">

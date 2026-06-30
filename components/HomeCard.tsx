@@ -1,5 +1,7 @@
 'use client';
 
+import CardHeader from '@/components/CardHeader';
+
 import { useEffect, useRef, useState } from 'react';
 
 const PAGE_SIZE = 5;
@@ -33,9 +35,7 @@ export default function HomeCard({ title, entries }: { title: string; entries: C
     <div
       ref={cardRef}
       className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-700 shadow-sm overflow-hidden flex flex-col h-[260px]">
-      <div className="bg-orange-200 dark:bg-orange-900/50 border-b border-orange-200 dark:border-orange-800 px-4 py-2.5 shrink-0">
-        <h3 className="text-sm font-semibold text-center text-gray-800 dark:text-zinc-100">{title}</h3>
-      </div>
+      <CardHeader title={title} className="shrink-0" />
       <div className="flex-1 flex flex-col">
         {Array.from({ length: PAGE_SIZE }).map((_, i) => {
           const entry = rows[i];

@@ -1,5 +1,7 @@
 'use client';
 
+import CardHeader from '@/components/CardHeader';
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
@@ -12,9 +14,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function PrivacyTab() {
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-700 shadow-sm overflow-hidden">
-      <div className="bg-orange-200 dark:bg-orange-900/50 border-b border-orange-200 dark:border-orange-800 px-4 py-2.5">
-        <h3 className="text-sm font-semibold text-center text-gray-800 dark:text-zinc-100">개인정보처리방침</h3>
-      </div>
+      <CardHeader title="개인정보처리방침" />
 
       <div className="p-6 space-y-5">
         <p className="text-sm text-gray-700 dark:text-zinc-300 leading-relaxed">

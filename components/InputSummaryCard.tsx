@@ -1,5 +1,7 @@
 'use client';
 
+import CardHeader from '@/components/CardHeader';
+
 import type { InputValues, CharMeta } from '@/types';
 import TooltipWrapper from '@/components/TooltipWrapper';
 
@@ -48,13 +50,12 @@ export default function InputSummaryCard({ inputs, meta, onEditInfo }: Props) {
     <>
       {/* 사냥/컨텐츠 정보 */}
       <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-700 overflow-hidden">
-        <div className="bg-orange-200 dark:bg-orange-900/50 border-b border-orange-200 dark:border-orange-800 px-4 py-2.5 flex items-center justify-center relative">
-          <h3 className="text-sm font-semibold text-center text-gray-800 dark:text-zinc-100">입력 정보</h3>
+        <CardHeader title="입력 정보" className="relative">
           <button
             onClick={onEditInfo}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 px-2.5 h-[24px] text-[11px] font-medium rounded border-2 bg-orange-500 border-orange-500 text-white hover:bg-orange-600 hover:border-orange-600 transition-colors cursor-pointer whitespace-nowrap"
           >정보 수정</button>
-        </div>
+        </CardHeader>
         <div className="py-3">
           <Row label="일 평균 재획" value={toTimeStr(inputs.dailySessions)} />
           <Row label="에픽 던전" value={inputs.epicDungeonZone} />
@@ -65,9 +66,7 @@ export default function InputSummaryCard({ inputs, meta, onEditInfo }: Props) {
 
       {/* 보약 정보 */}
       <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-700 overflow-hidden">
-        <div className="bg-orange-200 dark:bg-orange-900/50 border-b border-orange-200 dark:border-orange-800 px-4 py-2.5">
-          <h3 className="text-sm font-semibold text-center text-gray-800 dark:text-zinc-100">보약 정보</h3>
-        </div>
+        <CardHeader title="보약 정보" />
         <div className="py-3">
           <div className="flex items-center gap-2 px-4 py-1.5 text-sm">
             <span className="text-gray-800 dark:text-zinc-200 shrink-0 whitespace-nowrap">보약 리스트</span>

@@ -17,7 +17,7 @@ interface NoticeResponse {
   event: NoticeItem[];
 }
 
-export default function HomeCards() {
+export default function HomeCardSection() {
   const [data, setData] = useState<NoticeResponse | null>(null);
 
   useEffect(() => {

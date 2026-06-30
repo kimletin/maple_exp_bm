@@ -24,10 +24,9 @@ interface Props {
   onClose?: () => void;
   getInitialInputs: (level: number) => InputValues;
   existingOcids?: string[];
-  existingNames?: string[];
 }
 
-export default function CharacterSearchModal({ onConfirm, onClose, getInitialInputs, existingOcids = [], existingNames = [] }: Props) {
+export default function CharacterSearchModal({ onConfirm, onClose, getInitialInputs, existingOcids = [] }: Props) {
   useEffect(() => {
     lockScroll();
     return unlockScroll;

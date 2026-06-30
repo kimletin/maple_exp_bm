@@ -1,5 +1,7 @@
 'use client';
 
+import CardHeader from '@/components/CardHeader';
+
 import TooltipWrapper from '@/components/TooltipWrapper';
 import { LEVEL_EXP } from '@/data/levelExp';
 import type { CharMeta } from '@/types';
@@ -28,7 +30,6 @@ interface Props {
   name: string;
   level: number;
   meta: CharMeta | null;
-  onEditInfo?: () => void;
   isEmpty?: boolean;
   history: HistoryPoint[];
   ranking: Ranking | null;
@@ -110,7 +111,7 @@ function computeDelta(prev: Slot | null, slot: Slot): { deltaRate: number; delta
   return { deltaRate, deltaExp };
 }
 
-export default function CharacterCard({ name, level, meta, onEditInfo, isEmpty, history, ranking, loading }: Props) {
+export default function CharacterCard({ name, level, meta, isEmpty, history, ranking, loading }: Props) {
   const hasApi = !!meta?.ocid;
   const todayData = history.find(p => p.date === kstDate(0)) ?? null;
   const slots = computeSlots(history);
@@ -118,12 +119,7 @@ export default function CharacterCard({ name, level, meta, onEditInfo, isEmpty, 
   if (isEmpty) {
     return (
       <div className="character-card bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-700 overflow-hidden">
-        <div className="bg-orange-200 dark:bg-orange-900/50 border-b border-orange-200 dark:border-orange-800 px-4 py-2.5 relative">
-          <h3 className="text-sm font-semibold text-center text-gray-800 dark:text-zinc-100">캐릭터 정보</h3>
-          {onEditInfo && (
-            <button onClick={onEditInfo} className="absolute right-2.5 top-1/2 -translate-y-1/2 px-2.5 h-[24px] text-[11px] font-medium rounded border-2 bg-orange-500 border-orange-500 text-white hover:bg-orange-600 hover:border-orange-600 transition-colors cursor-pointer whitespace-nowrap">정보 수정</button>
-          )}
-        </div>
+        <CardHeader title="캐릭터 정보" />
         <div className="flex items-stretch h-[185px]">
           <div className="flex flex-col px-4 flex-1 min-w-0 pt-1 pb-5 items-center justify-center gap-3">
             <div className="w-24 h-24 rounded-xl shrink-0 overflow-hidden bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-2xl text-gray-300 dark:text-zinc-600">?</div>
@@ -143,14 +139,9 @@ export default function CharacterCard({ name, level, meta, onEditInfo, isEmpty, 
 
   return (
     <div className="character-card bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-700 overflow-hidden">
-      <div className="bg-orange-200 dark:bg-orange-900/50 border-b border-orange-200 dark:border-orange-800 px-4 py-2 flex items-center justify-center relative">
-        <h3 className="text-sm font-semibold text-center text-gray-800 dark:text-zinc-100">캐릭터 정보</h3>
-        {onEditInfo && (
-          <button onClick={onEditInfo} className="absolute right-2.5 top-1/2 -translate-y-1/2 px-2.5 h-[24px] text-[11px] font-medium rounded border-2 bg-orange-500 border-orange-500 text-white hover:bg-orange-600 hover:border-orange-600 transition-colors cursor-pointer whitespace-nowrap">정보 수정</button>
-        )}
-      </div>
+      <CardHeader title="캐릭터 정보" />
 
-      <div className="relative flex items-stretch h-[176px]">
+      <div className="relative flex items-stretch h-[172px]">
         {/* 좌측: 캐릭터 정보 */}
         <div className="flex flex-col px-4 flex-1 min-w-0 justify-center gap-4">
           <div className="flex items-center justify-center gap-5">

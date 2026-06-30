@@ -1,37 +1,12 @@
 'use client';
 
+import CardHeader from '@/components/CardHeader';
+
 import { useRef, useEffect } from 'react';
 import { LEVEL_EXP } from '@/data/levelExp';
 import type { MobGroup } from '@/types';
 import Num from '@/components/Num';
-
-interface PenaltyRow {
-  label: string;
-  value: string;
-  note?: string;
-  test: (diff: number) => boolean;
-}
-
-// 인게임 경험치 패널티 표 그대로 (선형 구간은 범위 한 행 + 비고)
-const PENALTY_ROWS: PenaltyRow[] = [
-  { label: '40 이상',   value: '0.70배',           test: d => d >= 40 },
-  { label: '39 ~ 21',   value: '0.71배 ~ 0.89배',  note: '1레벨 당 0.01씩 증가', test: d => d >= 21 && d <= 39 },
-  { label: '20 ~ 19',   value: '0.95배',           test: d => d >= 19 && d <= 20 },
-  { label: '18 ~ 17',   value: '0.96배',           test: d => d >= 17 && d <= 18 },
-  { label: '16 ~ 15',   value: '0.97배',           test: d => d >= 15 && d <= 16 },
-  { label: '14 ~ 13',   value: '0.98배',           test: d => d >= 13 && d <= 14 },
-  { label: '12 ~ 11',   value: '0.99배',           test: d => d >= 11 && d <= 12 },
-  { label: '10',        value: '1.00배',           test: d => d === 10 },
-  { label: '9 ~ 5',     value: '1.05배',           test: d => d >= 5 && d <= 9 },
-  { label: '4 ~ 2',     value: '1.10배',           test: d => d >= 2 && d <= 4 },
-  { label: '1 ~ -1',    value: '1.20배',           note: '최대 배율', test: d => d >= -1 && d <= 1 },
-  { label: '-2 ~ -4',   value: '1.10배',           test: d => d >= -4 && d <= -2 },
-  { label: '-5 ~ -9',   value: '1.05배',           test: d => d >= -9 && d <= -5 },
-  { label: '-10 ~ -20', value: '1.00배 ~ 0.90배',  note: '1레벨 당 0.01씩 감소', test: d => d >= -20 && d <= -10 },
-  { label: '-21 ~ -35', value: '0.70배 ~ 0.14배',  note: '1레벨 당 0.04씩 감소', test: d => d >= -35 && d <= -21 },
-  { label: '-36 이하',  value: '0.10배',           test: d => d <= -36 && d >= -39 },
-  { label: '-40 이하',  value: '최대 100',              test: d => d <= -40 },
-];
+import { PENALTY_SEGMENTS, type PenaltySegment } from '@/data/expPenalty';
 
 interface Props {
   charLevel: number;
@@ -60,16 +35,14 @@ export default function ExpInfoTab({ charLevel, monsterLevel, huntingMobs, hasCh
     return () => cancelAnimationFrame(frame);
   }, [charLevel]);
 
-  const isRowActive = (row: PenaltyRow) => hasCharacter && mobLevels.some(lv => row.test(charLevel - lv));
+  const isRowActive = (row: PenaltySegment) => hasCharacter && mobLevels.some(lv => row.test(charLevel - lv));
 
   return (
     <div>
       <div className="flex flex-row gap-4 items-stretch">
         {/* 레벨별 필요 경험치 */}
         <div className="flex-[55] min-w-0 bg-white dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-700 shadow-sm overflow-hidden flex flex-col">
-          <div className="bg-orange-200 dark:bg-orange-900/50 border-b border-orange-200 dark:border-orange-800 px-4 py-2.5 shrink-0">
-            <h3 className="text-sm font-semibold text-center text-gray-800 dark:text-zinc-100">레벨별 필요 경험치</h3>
-          </div>
+          <CardHeader title="레벨별 필요 경험치" className="shrink-0" />
           <div className="relative flex-1 min-h-0">
           <div ref={scrollRef} className="absolute inset-0 overflow-y-auto">
           <table className="table-fixed text-sm border-collapse w-full">
@@ -111,9 +84,7 @@ export default function ExpInfoTab({ charLevel, monsterLevel, huntingMobs, hasCh
 
         {/* 경험치 패널티 */}
         <div className="flex-[45] min-w-0 bg-white dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-700 shadow-sm overflow-hidden">
-          <div className="bg-orange-200 dark:bg-orange-900/50 border-b border-orange-200 dark:border-orange-800 px-4 py-2.5">
-            <h3 className="text-sm font-semibold text-center text-gray-800 dark:text-zinc-100">경험치 패널티</h3>
-          </div>
+          <CardHeader title="경험치 패널티" />
           <table className="table-fixed text-sm border-collapse w-full">
             <colgroup>
               <col style={{width:'30%'}} />
@@ -128,7 +99,7 @@ export default function ExpInfoTab({ charLevel, monsterLevel, huntingMobs, hasCh
               </tr>
             </thead>
             <tbody>
-              {PENALTY_ROWS.map((row, i) => {
+              {PENALTY_SEGMENTS.map((row, i) => {
                 const isActive = isRowActive(row);
                 return (
                   <tr

@@ -11,7 +11,7 @@ import ExpInfoTab from '@/components/ExpInfoTab';
 import ExpContentsTab, { CONTENT_KEYS } from '@/components/ExpContentsTab';
 import HuntingGroundTab from '@/components/HuntingGroundTab';
 import InfoCenterTab from '@/components/InfoCenterTab';
-import HomeCards from '@/components/HomeCards';
+import HomeCardSection from '@/components/HomeCardSection';
 import PrivacyTab from '@/components/PrivacyTab';
 import CharacterSearchModal, { type CharacterInfo } from '@/components/CharacterSearchModal';
 import CharacterCard, { type HistoryPoint, type Ranking } from '@/components/CharacterCard';
@@ -22,7 +22,6 @@ import { getMonsterParkZone } from '@/data/monsterPark';
 
 // 세션 내 오늘 경험치 조회 완료된 ocid (새로고침 시 초기화)
 
-const STORAGE_KEY = 'haru1sojae-inputs';
 const PRESETS_KEY = 'haru1sojae-presets';
 const PRESET_NAMES_KEY = 'haru1sojae-preset-names';
 const ACTIVE_PRESET_KEY = 'haru1sojae-active-preset';
@@ -83,13 +82,6 @@ const DEFAULT_INPUTS: InputValues = {
 
 const DEFAULT_NAMES = ['null', 'null', 'null', 'null', 'null', 'null'];
 
-// 구버전 프리셋의 '앵컴' 표기를 '앵글러컴퍼니'로 마이그레이션
-function migrateInputs(v: InputValues): InputValues {
-  if ((v.epicDungeonZone as string) === '앵컴') v = { ...v, epicDungeonZone: '앵글러컴퍼니' };
-  if (!v.monsterParkZone) v = { ...v, monsterParkZone: getMonsterParkZone(v.charLevel) };
-  return v;
-}
-
 function makeDefaultPresets(): InputValues[] {
   return Array.from({ length: NUM_PRESETS }, () => ({ ...DEFAULT_INPUTS }));
 }
@@ -106,14 +98,8 @@ function loadPresets(): { presets: InputValues[]; active: number; names: string[
     if (savedPresets) {
       const parsed = JSON.parse(savedPresets);
       if (Array.isArray(parsed) && parsed.length === NUM_PRESETS) {
-        return { presets: parsed.map(p => migrateInputs(p ? { ...DEFAULT_INPUTS, ...p } : { ...DEFAULT_INPUTS })), active, names };
+        return { presets: parsed.map(p => (p ? { ...DEFAULT_INPUTS, ...p } : { ...DEFAULT_INPUTS })), active, names };
       }
-    }
-    const old = localStorage.getItem(STORAGE_KEY);
-    if (old) {
-      const presets = makeDefaultPresets();
-      presets[0] = migrateInputs({ ...DEFAULT_INPUTS, ...JSON.parse(old) });
-      return { presets, active: 0, names };
     }
   } catch {}
   return { presets: makeDefaultPresets(), active: 0, names: [...DEFAULT_NAMES] };
@@ -276,6 +262,18 @@ export default function Home() {
     const rate = loadTodayExpRateFrom(charMetas[activePreset]);
     setTodayExpRate(rate);
   }, [activePreset]);
+
+  // 상단바를 본문과 좌우 정렬: #app-scroll의 스크롤바 거터 폭을 측정해 헤더 우측 패딩으로 보정
+  useEffect(() => {
+    const measure = () => {
+      const el = document.getElementById('app-scroll');
+      if (!el) return;
+      document.documentElement.style.setProperty('--app-sb-gutter', `${el.offsetWidth - el.clientWidth}px`);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [mounted]);
 
   const handleTabChange = (tab: Tab) => {
     setNotFound(false);
@@ -648,8 +646,6 @@ export default function Home() {
     [inputs, charMetas, activePreset]
   );
 
-  const currentOcid = charMetas[activePreset]?.ocid ?? null;
-
   if (!mounted) return <div className="min-h-dvh bg-gray-50 dark:bg-black" />;
 
   return (
@@ -660,7 +656,6 @@ export default function Home() {
           onClose={() => setShowSearchModal(false)}
           getInitialInputs={getInitialInputs}
           existingOcids={charMetas.filter(m => m?.ocid).map(m => m!.ocid!)}
-          existingNames={presetNames}
         />
       )}
       {showInfoModal && (
@@ -671,8 +666,8 @@ export default function Home() {
           onClose={() => setShowInfoModal(false)}
         />
       )}
-      <header className="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-600 shrink-0 z-10 shadow-sm">
-        <div className="w-[905px] mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <header className="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-600 shrink-0 z-10 shadow-sm" style={{ paddingRight: 'var(--app-sb-gutter, 0px)' }}>
+        <div className="w-[905px] mx-auto py-3 flex items-center justify-between gap-3">
           <button
             onClick={goHome}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
@@ -698,7 +693,6 @@ export default function Home() {
             <button
               onClick={toggleDark}
               className="p-1.5 rounded-lg transition-colors cursor-pointer text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              title={darkMode ? '라이트 모드' : '다크 모드'}
             >
               {darkMode ? <SunIcon /> : <MoonIcon />}
             </button>
@@ -750,7 +744,7 @@ export default function Home() {
             </button>
           ))}
         </div>
-        <HomeCards />
+        <HomeCardSection />
       </div>
       ) : isPrivacy ? (
       <div className="max-w-7xl mx-auto px-4 py-6">
@@ -891,7 +885,6 @@ export default function Home() {
                     epicDungeonBonus={charMetas[activePreset]?.epicDungeonBonus ?? 0}
                     epicDungeonBonuses={charMetas[activePreset]?.epicDungeonBonuses?.map(b => ({ name: b.name, pct: b.pct })) ?? []}
                     treasureBonus={charMetas[activePreset]?.treasureBonus ?? 0}
-                    treasureBonuses={charMetas[activePreset]?.treasureBonuses?.map(b => ({ name: b.name, pct: b.pct })) ?? []}
                     todayExpRate={todayExpRate}
                     slotKey={activePreset}
                     hasCharacter={numSlots > 0}
