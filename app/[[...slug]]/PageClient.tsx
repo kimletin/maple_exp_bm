@@ -908,7 +908,7 @@ export default function Home() {
       <footer className="bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-600 shrink-0">
         <div className="w-[905px] mx-auto px-4 py-6 flex flex-col items-center gap-2.5 text-center">
           <div className="flex items-center gap-2 text-xs">
-            <a href="https://open.kakao.com/me/letin_k" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-zinc-300 hover:text-orange-500 transition-colors">문의하기</a>
+            <a href="mailto:haru1sojae@gmail.com" className="text-gray-600 dark:text-zinc-300 hover:text-orange-500 transition-colors">문의하기</a>
             <span className="text-gray-300 dark:text-zinc-600">|</span>
             <a href="/privacy" onClick={(e) => { e.preventDefault(); goPrivacy(); }} className="text-gray-600 dark:text-zinc-300 hover:text-orange-500 transition-colors">개인정보처리방침</a>
           </div>
@@ -916,7 +916,7 @@ export default function Home() {
             <p className="text-[11px] text-gray-400 dark:text-zinc-500">Data based on NEXON OPEN API</p>
             <p className="text-[11px] text-gray-400 dark:text-zinc-500">This site is not an official site of NEXON and does not provide any warranty.</p>
           </div>
-          <p className="text-xs text-gray-400 dark:text-zinc-500">© 2026 하루1소재. All rights reserved.</p>
+          <p className="text-xs text-gray-400 dark:text-zinc-500">© 2026 하루1소재 by 레틴. All rights reserved.</p>
         </div>
       </footer>
       </div>
